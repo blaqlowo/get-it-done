@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Get It</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#fbf8f6;--card:rgba(255,255,255,.78);--ink:#1c1917;--mute:#78716c;--ln:#ebe5df;--acc:#ff5a5f;--acc2:#ff8a5c;--ok:#1f9d6b;--warn:#c98a0b;--bad:#d64545;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14110f;--card:rgba(36,31,28,.8);--ink:#f5f1ee;--mute:#a8a29e;--ln:#2e2723}}
+:root[data-theme="dark"]{--bg:#14110f;--card:rgba(36,31,28,.8);--ink:#f5f1ee;--mute:#a8a29e;--ln:#2e2723}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"SF Pro Text","Segoe UI",sans-serif}
+body:before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(40vmax 40vmax at 0% 0%,#ffd5c455,transparent),radial-gradient(40vmax 40vmax at 100% 60%,#e3d4ff55,transparent)}
+#app{max-width:480px;margin:0 auto;min-height:100vh;padding:0 14px 96px}
+button,select,input,textarea{font:inherit;color:inherit}button{cursor:pointer;border:0;background:none}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:10px;padding:12px 0;background:linear-gradient(var(--bg) 70%,transparent)}
+.logo{font-weight:800;font-size:22px;letter-spacing:-.8px}.logo b{color:var(--acc)}
+.top select{margin-left:auto;max-width:190px;padding:8px 10px;border-radius:12px;border:1px solid var(--ln);background:var(--card)}
+.card{background:var(--card);backdrop-filter:blur(18px) saturate(160%);-webkit-backdrop-filter:blur(18px) saturate(160%);border:1px solid var(--ln);border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 4px 18px #0000000a}
+h2{margin:6px 0 12px;font-size:24px;letter-spacing:-.6px}h3{margin:0 0 2px;font-size:17px}
+.mut{color:var(--mute);font-size:13px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.btn{padding:9px 16px;border-radius:999px;font-weight:600;border:1px solid var(--ln);background:var(--card)}.btn.p{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:0}.btn.g{color:var(--ok)}.btn.r{color:var(--bad)}.btn:disabled{opacity:.45}
+.pill{font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--ln)}.pill.requested,.pill.pending,.pill.submitted{color:var(--warn)}.pill.confirmed,.pill.approved,.pill.accepted,.pill.completed{color:var(--ok)}.pill.declined,.pill.rejected{color:var(--bad)}
+.offer{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--ln)}.offer>div{flex:1;min-width:0}
+.cr{font-weight:800;color:var(--acc)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stats .card{margin:0}.stats b{display:block;font-size:28px;letter-spacing:-1px}
+.tabs{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(480px,100%);display:flex;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:var(--card);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-top:1px solid var(--ln);z-index:6}
+.tabs button{flex:1;padding:10px 4px;border-radius:14px;font-weight:600;color:var(--mute)}.tabs button.on{color:var(--acc);background:#ff5a5f14}
+.banner{background:#ffe9c7;color:#6b4a06;border-radius:16px;padding:12px 14px;margin-bottom:12px;font-size:14px}
+.sheet{position:fixed;inset:0;z-index:20;background:#0006;display:flex;align-items:flex-end;justify-content:center}.sheet>div{width:min(480px,100%);background:var(--bg);border-radius:26px 26px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:90vh;overflow:auto}
+label{display:block;font-size:12px;font-weight:700;color:var(--mute);margin:10px 0 4px}
+.in{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--ln);background:var(--card);outline:0}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1c1917;color:#fff;padding:10px 16px;border-radius:99px;z-index:30;font-size:14px;max-width:90vw}
+.foot{text-align:center;font-size:12px;color:var(--mute);margin-top:18px}.foot button{text-decoration:underline;color:var(--mute)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const uid = () => Math.random().toString(36).slice(2, 8);
+const day = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+const fd = d => new Date(d + "T12:00").toLocaleDateString([], {weekday: "short", month: "short", day: "numeric"});
+const KEY = "getit-demo-v1", WELCOME = 100, BONUS = 20;
+const seed = () => ({
+  members: [{id: "m1", name: "Ava Laurent", handle: "@ava.eats", followers: "48k", status: "approved", credits: 120}, {id: "m2", name: "Noah Bell", handle: "@noahbell", followers: "12k", status: "pending", credits: 0}, {id: "m3", name: "Leo Marsh", handle: "@leomarsh", followers: "31k", status: "pending", credits: 0}],
+  venues: [
+    {id: "v1", name: "Olive & Rye", cuisine: "Italian", area: "Downtown", about: "Wood-fired pasta and natural wine.", offers: [{id: "o1", title: "Chef's tasting for two", desc: "Five courses with a wine pairing.", cost: 60}, {id: "o2", title: "Aperitivo hour", desc: "Two spritzes and a small plates board.", cost: 30}]},
+    {id: "v2", name: "Koi Garden", cuisine: "Japanese", area: "Riverside", about: "Omakase counter and a quiet garden terrace.", offers: [{id: "o3", title: "Omakase for two", desc: "Twelve pieces plus dessert.", cost: 80}]},
+    {id: "v3", name: "Ember Grill", cuisine: "Steakhouse", area: "Old Town", about: "Open-fire cooking and a rooftop bar.", offers: [{id: "o4", title: "Rooftop dinner for two", desc: "Shared steak, sides and two cocktails.", cost: 70}]}],
+  res: [{id: "r1", mid: "m1", vid: "v1", oid: "o2", date: day(2), time: "19:00", guests: 2, status: "requested", content: null}, {id: "r2", mid: "m1", vid: "v1", oid: "o1", date: day(-1), time: "20:00", guests: 2, status: "confirmed", content: null}]
+});
+let S, role = "admin", tab = "0", sheet = null;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+S = S || seed();
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const mem = id => S.members.find(m => m.id === id), ven = id => S.venues.find(v => v.id === id);
+const offer = r => ven(r.vid).offers.find(o => o.id === r.oid) || {title: "Offer removed", cost: 0};
+const ROLES = {admin: "Admin", venue: "Venue: Olive & Rye", m1: "Member: Ava (approved)", m2: "Member: Noah (pending)"};
+const TABS = {admin: ["Overview", "Members", "Bookings"], venue: ["Requests", "Offers", "Profile"], m: ["Discover", "Bookings", "Profile"]};
+const pill = s => '<span class="pill ' + s + '">' + s + "</span>";
+const btn = (a, label, cls = "", d = "") => '<button class="btn ' + cls + '" data-a="' + a + '" ' + d + ">" + label + "</button>";
+let toastT; function toast(t) { const e = document.createElement("div"); e.className = "toast"; e.textContent = t; document.body.appendChild(e); clearTimeout(toastT); toastT = setTimeout(() => e.remove(), 2600); }
+
+function resCard(r, who) {
+  const m = mem(r.mid), v = ven(r.vid), o = offer(r);
+  let acts = "";
+  if (r.status === "requested" && who !== "member") acts = btn("confirm", "Confirm", "g", 'data-id="' + r.id + '"') + btn("decline", "Decline", "r", 'data-id="' + r.id + '"');
+  if (r.status === "confirmed" && who === "member" && (!r.content || r.content.status === "rejected")) acts = btn("content", r.content ? "Resubmit content" : "Submit content", "p", 'data-id="' + r.id + '"');
+  if (r.content && who !== "member" && r.content.status === "submitted") acts = btn("accept", "Accept content", "g", 'data-id="' + r.id + '"') + btn("reject", "Ask for changes", "r", 'data-id="' + r.id + '"');
+  return '<div class="card"><div class="row"><h3>' + esc(who === "member" ? v.name : m.name) + '</h3><span class="sp"></span>' + pill(r.status) + '</div><div class="mut">' + esc(o.title) + " · " + fd(r.date) + " at " + r.time + " · " + r.guests + ' guests</div>' +
+    (who !== "member" ? '<div class="mut">' + esc(v.name) + " · " + esc(m.handle) + "</div>" : "") +
+    (r.content ? '<div class="mut" style="margin-top:6px">Content: <a href="' + esc(r.content.url) + '" target="_blank" rel="noopener noreferrer">' + esc(r.content.url.slice(0, 40)) + "</a> " + pill(r.content.status) + (r.content.note ? "<br>" + esc(r.content.note) : "") + "</div>" : "") +
+    (acts ? '<div class="row" style="margin-top:10px">' + acts + "</div>" : "") + "</div>";
+}
+
+function view() {
+  const kind = role === "admin" ? "admin" : role === "venue" ? "venue" : "m", t = Number(tab);
+  if (kind === "admin") {
+    if (t === 0) {
+      const open = S.res.filter(r => r.status === "requested").length, circ = S.members.reduce((a, m) => a + m.credits, 0);
+      return "<h2>Overview</h2><div class='stats'>" + [["Pending members", S.members.filter(m => m.status === "pending").length], ["Approved members", S.members.filter(m => m.status === "approved").length], ["Venues", S.venues.length], ["Open requests", open], ["Confirmed", S.res.filter(r => r.status === "confirmed").length], ["Credits held", circ]].map(a => "<div class='card'><span class='mut'>" + a[0] + "</span><b>" + a[1] + "</b></div>").join("") + "</div>";
+    }
+    if (t === 1) return "<h2>Members</h2>" + S.members.map(m => '<div class="card"><div class="row"><div><h3>' + esc(m.name) + '</h3><div class="mut">' + esc(m.handle) + " · " + m.followers + " followers</div></div><span class='sp'></span>" + pill(m.status) + '</div><div class="row" style="margin-top:10px">' +
+      (m.status === "pending" ? btn("approve", "Approve (+" + WELCOME + " credits)", "g", 'data-id="' + m.id + '"') + btn("rejectm", "Reject", "r", 'data-id="' + m.id + '"') : m.status === "approved" ? "<span class='cr'>" + m.credits + " credits</span><span class='sp'></span>" + btn("cr-", "-10", "", 'data-id="' + m.id + '"') + btn("cr+", "+10", "", 'data-id="' + m.id + '"') : "") + "</div></div>").join("");
+    return "<h2>Bookings</h2>" + (S.res.length ? S.res.map(r => resCard(r, "admin")).join("") : "<p class='mut'>No bookings yet.</p>");
+  }
+  if (kind === "venue") {
+    const v = ven("v1");
+    if (t === 0) { const l = S.res.filter(r => r.vid === "v1"); return "<h2>Requests</h2>" + (l.length ? l.map(r => resCard(r, "venue")).join("") : "<p class='mut'>No requests yet.</p>"); }
+    if (t === 1) return "<h2>Offers</h2>" + v.offers.map(o => '<div class="card"><div class="row"><div><h3>' + esc(o.title) + '</h3><div class="mut">' + esc(o.desc) + "</div></div><span class='sp'></span><span class='cr'>" + o.cost + '</span></div><div class="row" style="margin-top:8px">' + btn("deloffer", "Remove", "r", 'data-id="' + o.id + '"') + "</div></div>").join("") + btn("newoffer", "+ Add an offer", "p");
+    return "<h2>Profile</h2><div class='card'><h3>" + esc(v.name) + "</h3><div class='mut'>" + esc(v.cuisine) + " · " + esc(v.area) + "</div><label>About</label><textarea class='in' id='about' rows='3' maxlength='240'>" + esc(v.about) + "</textarea><div class='row' style='margin-top:10px'>" + btn("saveabout", "Save", "p") + "</div></div>";
+  }
+  const m = mem(role);
+  if (t === 0) return (m.status !== "approved" ? "<div class='banner'>Your account is awaiting approval. You can browse, and booking opens once an admin approves you.</div>" : "") + "<h2>Discover</h2>" + S.venues.map(v => '<div class="card"><h3>' + esc(v.name) + '</h3><div class="mut">' + esc(v.cuisine) + " · " + esc(v.area) + "</div><p style='margin:6px 0'>" + esc(v.about) + "</p>" + v.offers.map(o => '<div class="offer"><div><b>' + esc(o.title) + '</b><div class="mut">' + esc(o.desc) + "</div></div><div style='text-align:right'><div class='cr'>" + o.cost + "</div>" + btn("book", "Request", "p", 'data-v="' + v.id + '" data-id="' + o.id + '"' + (m.status !== "approved" ? " disabled" : "")) + "</div></div>").join("") + "</div>").join("");
+  if (t === 1) { const l = S.res.filter(r => r.mid === role); return "<h2>My bookings</h2>" + (l.length ? l.map(r => resCard(r, "member")).join("") : "<p class='mut'>No bookings yet. Find an offer in Discover.</p>"); }
+  return "<h2>Profile</h2><div class='card'><h3>" + esc(m.name) + "</h3><div class='mut'>" + esc(m.handle) + " · " + m.followers + " followers</div><p>" + pill(m.status) + "</p><div class='stats'><div class='card'><span class='mut'>Credits</span><b class='cr'>" + m.credits + "</b></div></div><p class='mut'>Requesting an offer holds its credits. They return if the venue declines. You earn " + BONUS + " credits when a venue accepts your content.</p></div>";
+}
+
+function sheetHtml() {
+  if (!sheet) return "";
+  const close = btn("close", "Cancel");
+  if (sheet.t === "book") { const v = ven(sheet.v), o = v.offers.find(x => x.id === sheet.o); return "<div class='sheet'><div><h3>" + esc(o.title) + "</h3><div class='mut'>" + esc(v.name) + " · " + o.cost + " credits</div><label>Date</label><input class='in' id='f-d' type='date' min='" + day(0) + "' value='" + day(3) + "'><label>Time</label><select class='in' id='f-t'>" + ["18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00"].map(x => "<option>" + x + "</option>").join("") + "</select><label>Guests</label><input class='in' id='f-g' type='number' min='1' max='4' value='2'><div class='row' style='margin-top:14px'>" + btn("sendbook", "Send request", "p") + close + "</div></div></div>"; }
+  if (sheet.t === "content") return "<div class='sheet'><div><h3>Submit your content</h3><div class='mut'>Paste the link to your post or reel.</div><label>Link</label><input class='in' id='f-u' placeholder='https://instagram.com/reel/...'><label>Note (optional)</label><textarea class='in' id='f-n' rows='2' maxlength='200'></textarea><div class='row' style='margin-top:14px'>" + btn("sendcontent", "Submit", "p") + close + "</div></div></div>";
+  return "<div class='sheet'><div><h3>New offer</h3><label>Title</label><input class='in' id='f-ti' maxlength='60'><label>Description</label><input class='in' id='f-de' maxlength='120'><label>Credit cost</label><input class='in' id='f-c' type='number' min='5' max='200' value='40'><div class='row' style='margin-top:14px'>" + btn("sendoffer", "Add offer", "p") + close + "</div></div></div>";
+}
+
+function render() {
+  const kind = role === "admin" ? "admin" : role === "venue" ? "venue" : "m";
+  const tabs = TABS[kind].map((n, i) => "<button class='" + (String(i) === tab ? "on" : "") + "' data-a='tab' data-id='" + i + "'>" + n + "</button>").join("");
+  $("#app").innerHTML = "<div class='top'><div class='logo'>Get <b>It</b></div><select id='role' aria-label='View the demo as'>" + Object.entries(ROLES).map(([k, n]) => "<option value='" + k + "'" + (k === role ? " selected" : "") + ">" + n + "</option>").join("") + "</select></div>" + view() +
+    "<div class='foot'>Demo with sample data, saved in this browser only. <button data-a='reset'>Reset demo</button></div><nav class='tabs'>" + tabs + "</nav>" + sheetHtml();
+}
+
+const find = id => S.res.find(r => r.id === id), v$ = id => $("#" + id)?.value.trim();
+const ACT = {
+  tab: d => { tab = d.id; },
+  close: () => { sheet = null; },
+  reset: () => { S = seed(); save(); },
+  approve: d => { const m = mem(d.id); m.status = "approved"; m.credits += WELCOME; toast(m.name + " approved"); },
+  rejectm: d => { mem(d.id).status = "rejected"; },
+  "cr+": d => { mem(d.id).credits += 10; }, "cr-": d => { const m = mem(d.id); m.credits = Math.max(0, m.credits - 10); },
+  confirm: d => { find(d.id).status = "confirmed"; toast("Reservation confirmed"); },
+  decline: d => { const r = find(d.id); r.status = "declined"; mem(r.mid).credits += offer(r).cost; toast("Declined, credits refunded"); },
+  book: d => { sheet = {t: "book", v: d.v, o: d.id}; },
+  sendbook: () => {
+    const v = ven(sheet.v), o = v.offers.find(x => x.id === sheet.o), m = mem(role), date = v$("f-d"), g = Number(v$("f-g"));
+    if (!date || date < day(0)) return toast("Pick a date from today onward");
+    if (!(g >= 1 && g <= 4)) return toast("Guests must be 1 to 4");
+    if (m.credits < o.cost) return toast("Not enough credits (" + o.cost + " needed)");
+    m.credits -= o.cost; S.res.unshift({id: "r" + uid(), mid: m.id, vid: v.id, oid: o.id, date, time: v$("f-t"), guests: g, status: "requested", content: null});
+    sheet = null; tab = "1"; toast("Request sent. Credits are held until the venue replies.");
+  },
+  content: d => { sheet = {t: "content", id: d.id}; },
+  sendcontent: () => { const u = v$("f-u"); if (!/^https?:\/\/\S+$/.test(u || "")) return toast("Enter a link starting with http or https"); find(sheet.id).content = {url: u, note: v$("f-n") || "", status: "submitted"}; sheet = null; toast("Content submitted for review"); },
+  accept: d => { const r = find(d.id); r.content.status = "accepted"; r.status = "completed"; mem(r.mid).credits += BONUS; toast("Accepted. " + BONUS + " credits awarded"); },
+  reject: d => { find(d.id).content.status = "rejected"; toast("Sent back for changes"); },
+  newoffer: () => { sheet = {t: "offer"}; },
+  sendoffer: () => { const ti = v$("f-ti"), c = Number(v$("f-c")); if (!ti) return toast("Add a title"); if (!(c >= 5 && c <= 200)) return toast("Cost must be 5 to 200 credits"); ven("v1").offers.push({id: "o" + uid(), title: ti, desc: v$("f-de") || "", cost: c}); sheet = null; toast("Offer added"); },
+  deloffer: d => { if (S.res.some(r => r.oid === d.id && (r.status === "requested" || r.status === "confirmed"))) return toast("This offer has active bookings"); const v = ven("v1"); v.offers = v.offers.filter(o => o.id !== d.id); },
+  saveabout: () => { ven("v1").about = v$("about") || ""; toast("Saved"); }
+};
+document.addEventListener("click", e => { const t = e.target.closest("[data-a]"); if (!t || t.disabled) return; ACT[t.dataset.a]?.(t.dataset); save(); render(); });
+document.addEventListener("change", e => { if (e.target.id === "role") { role = e.target.value; tab = "0"; sheet = null; render(); } });
+render();
+</script>
+</body>
+</html>
